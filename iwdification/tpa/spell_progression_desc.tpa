@@ -1,0 +1,37 @@
+// Created with AI. Do not merge upstream until human-verified.
+// Optional localized sentence replacements; untranslated descriptions stay intact.
+DEFINE_ACTION_FUNCTION cd_spell_progression_desc
+  INT_VAR class = 0 base_desc = 0 old_ref = 0 new_ref = 0
+BEGIN
+  ACTION_IF TRA_ENTRY_EXISTS ("%old_ref%") && TRA_ENTRY_EXISTS ("%new_ref%") BEGIN
+    OUTER_SPRINT old (AT old_ref)
+    OUTER_SPRINT new (AT new_ref)
+    ACTION_CLEAR_ARRAY cd_progression_descs
+    ACTION_DEFINE_ASSOCIATIVE_ARRAY cd_progression_descs BEGIN ~%base_desc%~ => 1 END
+
+    ACTION_IF FILE_EXISTS_IN_GAME ~kitlist.2da~ BEGIN
+      COPY_EXISTING ~kitlist.2da~ ~override~
+        COUNT_2DA_ROWS 9 rows
+        FOR (index = 2; index < rows; ++index) BEGIN
+          READ_2DA_ENTRY index 8 9 kit_class
+          PATCH_IF kit_class = class BEGIN
+            READ_2DA_ENTRY index 4 9 kit_desc
+            PATCH_IF kit_desc > 0 BEGIN
+              DEFINE_ASSOCIATIVE_ARRAY cd_progression_descs BEGIN ~%kit_desc%~ => 1 END
+            END
+          END
+        END
+        BUT_ONLY
+    END
+
+    ACTION_PHP_EACH cd_progression_descs AS strref => unused BEGIN
+      ACTION_GET_STRREF strref desc
+      OUTER_PATCH_SAVE updated ~%desc%~ BEGIN
+        REPLACE_TEXTUALLY CASE_SENSITIVE ~%old%~ ~%new%~
+      END
+      ACTION_IF !(~%desc%~ STRING_EQUAL ~%updated%~) BEGIN
+        STRING_SET_EVALUATE strref ~%updated%~
+      END
+    END
+  END
+END

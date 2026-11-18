@@ -187,22 +187,9 @@ DEFINE_ACTION_FUNCTION iwd_bardsong_postproduction BEGIN
         
         ACTION_IF gets_songs BEGIN
           OUTER_SET modified = 0      
-          OUTER_INNER_PATCH_SAVE desc ~%desc%~ BEGIN  
-            SPRINT old @201
-            REPLACE_EVALUATE "\(.*\)%old%.*" BEGIN
-              SET modified = 1 
-            END "%MATCH1%DW_PLACEHOLDER"  
-            PATCH_FOR_EACH tra_ref IN 202 203 204 BEGIN
-              SPRINT old (AT tra_ref)
-              REPLACE_TEXTUALLY "[%WNL%%LNL%%MNL%].*%old%" ""
-            END
-            PATCH_IF modified BEGIN
-              PATCH_FOR_EACH tra_ref IN 216 215 214 213 212 211 210 BEGIN
-                SPRINT new (AT tra_ref)
-                REPLACE_TEXTUALLY "\(.*\)DW_PLACEHOLDER.*\([%WNL%%LNL%%MNL%]\)" "\1DW_PLACEHOLDER\2\1%new%\2"		
-              END
-              REPLACE_TEXTUALLY "\(.*\)DW_PLACEHOLDER.*\([%WNL%%LNL%%MNL%]\)" ""	
-            END
+          // Created with AI. Do not merge upstream until human-verified.
+          OUTER_INNER_PATCH_SAVE desc ~%desc%~ BEGIN
+            LPF bard_desc_helper RET modified END
           END
           
           ACTION_IF !modified BEGIN
@@ -217,12 +204,9 @@ DEFINE_ACTION_FUNCTION iwd_bardsong_postproduction BEGIN
 
         END ELSE BEGIN // doesn't get songs
         
+          // Created with AI. Do not merge upstream until human-verified.
           OUTER_INNER_PATCH_SAVE desc ~%desc%~ BEGIN  
-            SPRINT discard @221
-            SPRINT disadvantages @222
-            SPRINT newline @220
-            REPLACE_TEXTUALLY "\(%disadvantages%\)\(.*[%WNL%%MNL%%LNL%][^a-zA-Z0-9]*\)\([a-zA-Z0-9].*\)" "\1\2%newline%\2\3"
-            REPLACE_TEXTUALLY "[%WNL%%MNL%%LNL%][^a-zA-z]*%discard%[^a-z]*$" ""
+            LPF bard_kit_desc_helper END
           END  
         
         END
@@ -237,24 +221,56 @@ DEFINE_ACTION_FUNCTION iwd_bardsong_postproduction BEGIN
 
 END
 
-DEFINE_PATCH_FUNCTION bard_desc_helper BEGIN
+// Created with AI. Do not merge upstream until human-verified.
+DEFINE_PATCH_FUNCTION bard_desc_helper
+	RET modified
+BEGIN
+	SET modified = 0
 	SPRINT old @201
-	REPLACE_TEXTUALLY "\(.*\)%old%.*" "\1DW_PLACEHOLDER"
-	PATCH_FOR_EACH tra_ref IN 202 203 204 BEGIN
-		SPRINT old (AT tra_ref)
-		REPLACE_TEXTUALLY "[%WNL%%LNL%%MNL%].*%old%" ""
+	// A missing translation match must not remove the existing song's effects.
+	PATCH_IF INDEX_BUFFER ("%old%") >= 0 BEGIN
+		SET modified = 1
+		REPLACE_TEXTUALLY "\([^%WNL%%LNL%%MNL%]*\)%old%[^%WNL%%LNL%%MNL%]*" "\1DW_PLACEHOLDER"
+		PATCH_FOR_EACH tra_ref IN 202 203 204 BEGIN
+			SPRINT old (AT tra_ref)
+			REPLACE_TEXTUALLY "\(%WNL%\|%LNL%\|%MNL%\)[^%WNL%%LNL%%MNL%]*%old%" ""
+		END
+		// The last line of a TLK string need not have a terminating newline.
+		SET bard_desc_length = BUFFER_LENGTH
+		PATCH_IF BYTE_AT (bard_desc_length - 1) != 10 && BYTE_AT (bard_desc_length - 1) != 13 BEGIN
+			INSERT_BYTES bard_desc_length 1
+			WRITE_BYTE bard_desc_length 10
+		END
+		PATCH_FOR_EACH tra_ref IN 216 215 214 213 212 211 210 BEGIN
+			SPRINT new (AT tra_ref)
+			REPLACE_TEXTUALLY "\([^%WNL%%LNL%%MNL%]*\)DW_PLACEHOLDER[^%WNL%%LNL%%MNL%]*\(%WNL%\|%LNL%\|%MNL%\)" "\1DW_PLACEHOLDER\2\1%new%\2"
+		END
+		REPLACE_TEXTUALLY "\([^%WNL%%LNL%%MNL%]*\)DW_PLACEHOLDER[^%WNL%%LNL%%MNL%]*\(%WNL%\|%LNL%\|%MNL%\)" ""
 	END
-	PATCH_FOR_EACH tra_ref IN 216 215 214 213 212 211 210 BEGIN
-		SPRINT new (AT tra_ref)
-		REPLACE_TEXTUALLY "\(.*\)DW_PLACEHOLDER.*\([%WNL%%LNL%%MNL%]\)" "\1DW_PLACEHOLDER\2\1%new%\2"		
-	END
-	REPLACE_TEXTUALLY "\(.*\)DW_PLACEHOLDER.*\([%WNL%%LNL%%MNL%]\)" ""	
 END
 
+// Created with AI. Do not merge upstream until human-verified.
 DEFINE_PATCH_FUNCTION bard_kit_desc_helper BEGIN
 	SPRINT discard @221
 	SPRINT disadvantages @222
 	SPRINT newline @220
-	REPLACE_TEXTUALLY "\(%disadvantages%\)\(.*[%WNL%%MNL%%LNL%][^a-zA-Z0-9]*\)\([a-zA-Z0-9].*\)" "\1\2%newline%\2\3"
-	REPLACE_TEXTUALLY "[%WNL%%MNL%%LNL%][^a-zA-z]*%discard%.*" ""
+	SET bard_kit_inserted = 0
+	PATCH_IF !enhanced_edition BEGIN
+		// Preserve classic-game prefixes in their original, single-byte encoding.
+		REPLACE_EVALUATE "\(%disadvantages%\)\([^%WNL%%MNL%%LNL%]*[%WNL%%MNL%%LNL%][ %TAB%%WNL%%MNL%%LNL%]*[^a-zA-Z0-9%WNL%%MNL%%LNL%]*\)\([a-zA-Z0-9][^%WNL%%MNL%%LNL%]*\)" BEGIN
+			SET bard_kit_inserted = 1
+		END "%MATCH1%%MATCH2%%newline%%MATCH2%%MATCH3%"
+	END
+	PATCH_IF !bard_kit_inserted BEGIN
+		// UTF-8 text need not contain ASCII letters. Multibyte bullets must be
+		// complete alternatives, never individual bytes in a character class.
+		REPLACE_EVALUATE CASE_INSENSITIVE "\(%disadvantages%\)\([^%WNL%%MNL%%LNL%]*[%WNL%%MNL%%LNL%][ %TAB%%WNL%%MNL%%LNL%]*\([-*]\|–\|—\|•\)?[ %TAB%]*\)\([^ %TAB%%WNL%%MNL%%LNL%][^%WNL%%MNL%%LNL%]*\)" BEGIN
+			SET bard_kit_inserted = 1
+		END "%MATCH1%%MATCH2%%newline%%MATCH2%%MATCH4%"
+	END
+	// Keep the original entry when its replacement could not be inserted.
+	PATCH_IF bard_kit_inserted BEGIN
+		// In particular, this prefix must never consume another line's text.
+		REPLACE_TEXTUALLY "\(%WNL%\|%LNL%\|%MNL%\)[^a-zA-Z%WNL%%MNL%%LNL%]*%discard%[^%WNL%%MNL%%LNL%]*" ""
+	END
 END

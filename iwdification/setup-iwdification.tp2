@@ -22,6 +22,8 @@ ALWAYS
     
     INCLUDE ~iwdification/tpa/g3_cpmvars_master.tpa~ // cpm variables
     INCLUDE ~iwdification/iwdspells/lib/clab_reindex.tpa~ // clab stuff
+    // Created with AI. Do not merge upstream until human-verified.
+    INCLUDE ~iwdification/tpa/spell_progression_desc.tpa~
   
     ACTION_IF !GAME_IS ~soa tob bgt ca tutu tutu_totsc iwd_in_bg2~ THEN BEGIN
 
@@ -928,6 +930,14 @@ ACTION_PHP_EACH cd_pal_desc AS string => loh BEGIN
   
 END 
   
+// Created with AI. Do not merge upstream until human-verified.
+ACTION_IF !MOD_IS_INSTALLED ~iwdification/setup-iwdification.tp2~ 160 &&
+          !MOD_IS_INSTALLED ~cdtweaks/setup-cdtweaks.tp2~ 2390 &&
+          !(FILE_EXISTS_IN_GAME ~mxsplpal.2da~ &&
+            RESOURCE_CONTAINS ~mxsplpal.2da~ ~^[ %TAB%]*6[ %TAB%]+[1-9]~) BEGIN
+  LAF cd_spell_progression_desc INT_VAR class = 6 base_desc = 9558 old_ref = 16002 new_ref = 16001 END
+END
+
 // handing out some abilities
 COPY_EXISTING_REGEXP GLOB ~^.+\.cre$~ ~override~
   SET paladin_level = 0
@@ -986,6 +996,8 @@ GROUP @995
 LABEL ~cd_tweaks_paladin_spell_progression_iwd~
 
 INCLUDE ~iwdification/tpa/comp_2390.tpa~
+// Created with AI. Do not merge upstream until human-verified.
+LAF cd_spell_progression_desc INT_VAR class = 6 base_desc = 9558 old_ref = 16001 new_ref = 16002 END
 
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
@@ -1034,6 +1046,8 @@ LABEL ~cd_tweaks_ranger_spell_progression_iwd~
 
 OUTER_SET game_is_iwd2 = 0
 INCLUDE ~iwdification/tpa/comp_2400.tpa~
+// Created with AI. Do not merge upstream until human-verified.
+LAF cd_spell_progression_desc INT_VAR class = 12 base_desc = 9557 old_ref = 17001 new_ref = 17002 END
   
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
 /////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\/////\\\\\
