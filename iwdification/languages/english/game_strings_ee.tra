@@ -213,7 +213,6 @@ Special Abilities:
 – Fire Resistance: -25%~  
 @10003 = ~– May cast Detect Evil once per day per level (starts at 1st level with 4 uses).~ // match exact from bg2ee strref 9558
 @10004 = ~– May cast Protection From Evil once per day per level (starts at 1st level with one use).~ // match exact from bg2ee strref 9558
-// Created with AI. Do not merge upstream until human-verified.
 @10005 = ~– May cast priest spells starting at level [69].~ // match exact from bg2ee strref 9558
 // Also matches level 6 when spell progression was installed before abilities.
 @10006 = ~– May use the Cure Disease ability once per day.
